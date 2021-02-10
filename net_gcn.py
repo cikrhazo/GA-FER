@@ -1,11 +1,13 @@
 import torch
 from torch import nn
 import numpy as np
+import torch.nn.functional as F
 from network.modules import ResGCN_Module, AttGCN_Module
 from mmcv.cnn import constant_init, kaiming_init
-
+from torch.cuda.amp import autocast
 
 ###########################################################################################################
+
 class MeanShift(nn.Conv2d):
     def __init__(self, rgb_range, rgb_mean, rgb_std, sign=-1):
         super(MeanShift, self).__init__(3, 3, kernel_size=1)
@@ -55,25 +57,57 @@ class ResGCN(nn.Module):
             ResGCN_Input_Branch(structure, block, num_channel, A)
             for _ in range(num_input)
         ])
-
+        point = int(A.size(-1))
         self.InputBranchVis = nn.ModuleList(
             nn.Sequential(
                 nn.Conv2d(3, mem_size, kernel_size=3, padding=1, stride=1),
                 nn.BatchNorm2d(mem_size),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+
+                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
+                nn.BatchNorm2d(mem_size),
+                nn.ReLU(inplace=True),
                 nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
                 nn.BatchNorm2d(mem_size),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+
+                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
+                nn.BatchNorm2d(mem_size),
+                nn.ReLU(inplace=True),
                 nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
                 nn.BatchNorm2d(mem_size),
                 nn.ReLU(inplace=True),
                 nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+
+                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
+                nn.BatchNorm2d(mem_size),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
+                nn.BatchNorm2d(mem_size),
+                nn.ReLU(inplace=True),
+                nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+
                 nn.Conv2d(mem_size, 32, kernel_size=6, padding=0, stride=1),
-                nn.ReLU(inplace=True)
             )
-            for _ in range(68)
+            for _ in range(point)
+        )
+        # self.abstract = nn.Conv2d(mem_size, 32, kernel_size=6, padding=0, stride=1)
+        self.VisionRes = nn.Sequential(
+            nn.Linear(32 * point, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Linear(512, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+            nn.Linear(1024, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Linear(512, 256 * point),
         )
 
         rgb_mean = (0.4488, 0.4371, 0.4040)
@@ -81,20 +115,21 @@ class ResGCN(nn.Module):
         self.sub_mean = MeanShift(1, rgb_mean, rgb_std)
 
         # main stream
-        module_list = [module(32*num_input + 32, 128, block, A, stride=2)]
+        module_list = [module(32 * num_input + 32, 128, block, A, stride=2)]
         module_list += [module(128, 128, block, A) for _ in range(structure[2] - 1)]
         module_list += [module(128, 256, block, A, stride=2)]
         module_list += [module(256, 256, block, A) for _ in range(structure[3] - 1)]
         self.main_stream = nn.ModuleList(module_list)
 
         # output
-        self.global_pooling = nn.AdaptiveAvgPool2d(1)
+        self.global_pooling = nn.Linear(256 * point, 256)
         self.fcn = nn.Linear(256, num_class)
 
         # init parameters
         self._init_weights()
         self.zero_init_lastBN()
 
+    @autocast()
     def forward(self, g, v):
 
         N, I, C, T, V = g.size()  # batch * branch * coordinate * frame * point
@@ -109,10 +144,15 @@ class ResGCN(nn.Module):
         v = self.sub_mean(v.view(Bz * P, Ch, H, W))
         v = v.view(Bz, P, Ch, H, W)
         v_cat = []
+        # v_for_res = []
+        # Todo multiprocess encoding
         for i, branch in enumerate(self.InputBranchVis):
+            # v_res_ = branch(v[:, i, :, :, :])
+            # v_for_res.append(v_res_)
             v_cat.append(branch(v[:, i, :, :, :]))
         v = torch.cat(v_cat, dim=1)
-        v = v.view(P, Bz, 1, -1).permute(1, 3, 2, 0).contiguous()
+        # v_for_res = torch.cat(v_for_res, dim=1).view(Bz, -1)
+        v = v.view(Bz, -1, P, 1).permute(0, 1, 3, 2).contiguous()  # batch * channel * frame * point
 
         # fusion
         x = torch.cat((g, v), dim=1)
@@ -124,10 +164,11 @@ class ResGCN(nn.Module):
         # extract feature
         _, C, T, V = x.size()
         feature = x.view(N, C, T, V)
+        v_res = self.VisionRes(v.view(N, -1))
 
         # output
-        feature = self.global_pooling(feature)
-        feature = feature.view(N, -1)
+        feature = self.global_pooling(feature.view(N, -1) + v_res)
+        feature = F.relu(feature.view(N, -1))
         x = self.fcn(feature)
 
         return x, feature
@@ -163,15 +204,23 @@ if __name__ == "__main__":
     A = torch.from_numpy(Graph().A.astype(np.float32))
     A = Variable(A.cuda(), requires_grad=False)
 
-    gcn = ResGCN(module=ResGCN_Module,
-                 structure=[1, 2, 3, 3],
-                 block='Bottleneck',
-                 A=A,
-                 data_shape=(3, 2, 1, 68), num_class=7).cuda()
+    gcn = ResGCN(
+        module=AttGCN_Module,
+        structure=[1, 2, 3, 3],
+        block='Bottleneck',
+        A=A,
+        data_shape=(3, 2, 1, 68),
+        num_class=7,
+        mem_size=64
+    )
+    gcn.cuda()
 
-    in_tensor = torch.randn(size=(3, 3, 2, 1, 68))  # batch * branch * coordinate * frame * point
-    in_tensor = Variable(in_tensor.cuda(), requires_grad=False)
+    g = torch.randn(size=(3, 3, 2, 1, 68))  # batch * branch * coordinate * frame * point
+    g = Variable(g.cuda(), requires_grad=False)
 
-    out_tensor = gcn(in_tensor)[0]
+    v = torch.randn(size=(3, 68, 3, 49, 49))
+    v = Variable(v.cuda(), requires_grad=False)
+
+    out_tensor = gcn(g, v)[0]
     print(out_tensor.requires_grad)
 
