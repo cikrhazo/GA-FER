@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Graph():
-    def __init__(self, max_hop=3, dilation=1):
+    def __init__(self, max_hop=5, dilation=1):
         self.max_hop = max_hop
         self.dilation = dilation
 
@@ -27,8 +27,14 @@ class Graph():
             (42, 43), (43, 44), (44, 45), (45, 46), (46, 47), (47, 42),  # right eye
             (48, 49), (49, 50), (50, 51), (51, 52), (52, 53), (53, 54),
             (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 48),  # lip
-            (60, 61), (61, 62), (62, 63), (63, 64), (64, 65), (65, 66), (66, 67), (67, 60)  # teeth
+            (60, 61), (61, 62), (62, 63), (63, 64), (64, 65), (65, 66), (66, 67), (67, 60),  # teeth
+            (27, 38), (27, 39), (27, 40), (27, 21), (27, 22), (27, 42), (27, 43), (27, 47),  # additional
+            (17, 36), (21, 39), (22, 42), (26, 45),  # additional
+            (48, 60), (54, 64),  # additional
+            (36, 31), (41, 31), (40, 31), (39, 31), (48, 31), (49, 31),  # additional
+            (42, 35), (47, 35), (46, 35), (45, 35), (54, 35), (53, 35)  # additional
         ]
+        # neighbor_link = [(i[0]-17, i[1]-17) for i in neighbor_link]
         parts = [
             np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),  # face
             np.array([17, 18, 19, 20, 21]),  # left eyebrow
@@ -39,6 +45,7 @@ class Graph():
             np.array([48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]),  # lip
             np.array([60, 61, 62, 63, 64, 65, 66, 67]),  # teeth
         ]
+        # parts = [i-17 for i in parts]
         self_link = [(i, i) for i in range(num_node)]
         edge = self_link + neighbor_link
         return num_node, edge, parts
@@ -76,3 +83,19 @@ class Graph():
                 Dn[i, i] = Dl[i]**(-1)
         AD = np.dot(A, Dn)
         return AD
+
+
+class Graph_Default_RAF_Auto():
+    # Todo: using provided landmarks
+    def __init__(self, max_hop=5, dilation=1):
+        self.max_hop = max_hop
+        self.dilation = dilation
+
+        # get edges
+        self.num_node, self.edge, self.parts = self._get_edge()
+
+        # get adjacency matrix
+        self.A = self._get_adjacency()
+
+    def __str__(self):
+        return self.A
