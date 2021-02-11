@@ -63,14 +63,7 @@ class ResGCN(nn.Module):
                 nn.Conv2d(3, mem_size, kernel_size=3, padding=1, stride=1),
                 nn.BatchNorm2d(mem_size),
                 nn.ReLU(inplace=True),
-                nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-
-                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
-                nn.BatchNorm2d(mem_size),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
-                nn.BatchNorm2d(mem_size),
-                nn.ReLU(inplace=True),
+                # pool:
                 nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
 
                 nn.Conv2d(mem_size, mem_size, kernel_size=3, padding=1, stride=1),
@@ -110,6 +103,22 @@ class ResGCN(nn.Module):
             nn.Linear(512, 256 * point),
         )
 
+        # self.GeoRes = nn.Sequential(
+        #     nn.Linear(32 * 3 * point, 512),
+        #     nn.BatchNorm1d(512),
+        #     nn.ReLU(),
+        #     nn.Linear(512, 1024),
+        #     nn.BatchNorm1d(1024),
+        #     nn.ReLU(),
+        #     nn.Linear(1024, 1024),
+        #     nn.BatchNorm1d(1024),
+        #     nn.ReLU(),
+        #     nn.Linear(1024, 512),
+        #     nn.BatchNorm1d(512),
+        #     nn.ReLU(),
+        #     nn.Linear(512, 256 * point),
+        # )
+
         rgb_mean = (0.4488, 0.4371, 0.4040)
         rgb_std = (1.0, 1.0, 1.0)
         self.sub_mean = MeanShift(1, rgb_mean, rgb_std)
@@ -136,6 +145,7 @@ class ResGCN(nn.Module):
 
         # input branches
         g_cat = []
+        # Todo multiprocess
         for i, branch in enumerate(self.InputBranchGeo):
             g_cat.append(branch(g[:, i, :, :, :]))
         g = torch.cat(g_cat, dim=1)
@@ -144,15 +154,11 @@ class ResGCN(nn.Module):
         v = self.sub_mean(v.view(Bz * P, Ch, H, W))
         v = v.view(Bz, P, Ch, H, W)
         v_cat = []
-        # v_for_res = []
-        # Todo multiprocess encoding
+        # Todo multiprocess
         for i, branch in enumerate(self.InputBranchVis):
-            # v_res_ = branch(v[:, i, :, :, :])
-            # v_for_res.append(v_res_)
             v_cat.append(branch(v[:, i, :, :, :]))
-        v = torch.cat(v_cat, dim=1)
-        # v_for_res = torch.cat(v_for_res, dim=1).view(Bz, -1)
-        v = v.view(Bz, -1, P, 1).permute(0, 1, 3, 2).contiguous()  # batch * channel * frame * point
+        v = torch.stack(v_cat, dim=4)
+        v = v.view(Bz, -1, 1, 1, P).squeeze(-2).contiguous()  # batch * channel * frame * point
 
         # fusion
         x = torch.cat((g, v), dim=1)
@@ -223,4 +229,3 @@ if __name__ == "__main__":
 
     out_tensor = gcn(g, v)[0]
     print(out_tensor.requires_grad)
-
