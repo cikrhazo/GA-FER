@@ -155,6 +155,7 @@ class ResGCN(nn.Module):
         v = v.view(Bz, P, Ch, H, W)
         v_cat = []
         # Todo multiprocess
+        # Using 3D Conv can speed up the operation but the 3D bacth norm is not correct, which may lead to a performance degardation.
         for i, branch in enumerate(self.InputBranchVis):
             v_cat.append(branch(v[:, i, :, :, :]))
         v = torch.stack(v_cat, dim=4)
