@@ -1,3 +1,3 @@
 # GA-FacialER
 
-This are the main modules for GA-FER
+These are the main modules for GA-FER
