@@ -179,82 +179,38 @@ class VisModel(nn.Module):
 
         # Lateral layers
         self.latlayer5 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=1, stride=1, bias=False),
+            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True)
         )
         self.latlayer4 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=1, stride=1, bias=False),
+            nn.Conv2d(512, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+            nn.ReLU(inplace=True)
         )
         self.latlayer3 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=1, stride=1, bias=False),
+            nn.Conv2d(256, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
+            nn.ReLU(inplace=True)
         )
         self.latlayer2 = nn.Sequential(
-            nn.Conv2d(128, 512, kernel_size=1, stride=1, bias=False),
+            nn.Conv2d(128, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
+            nn.Conv2d(512, 512, kernel_size=3, stride=(2, 2), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),
         )
 
         # Smooth layers
-        self.smooth1 = nn.Sequential(
-            nn.Conv2d(512 * 4, 512, kernel_size=1, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True)
-        )
-        self.smooth2 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True)
-        )
-        self.smooth3 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True)
-        )
-        self.smooth4 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.ReLU(inplace=True)
-        )
-        self.smooth5 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+        self.smooth = nn.Sequential(
+            nn.Conv2d(512*4, 512, kernel_size=3, stride=(1, 1), padding=(1, 1)),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True)
         )
@@ -267,6 +223,7 @@ class VisModel(nn.Module):
         self.relu7 = nn.ReLU(inplace=True)
         self.bn7 = nn.BatchNorm1d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         self.fc8 = nn.Linear(in_features=256, out_features=num_class, bias=True)
+
         self._init_weights()
 
     @autocast()
@@ -284,12 +241,12 @@ class VisModel(nn.Module):
         c4 = self.SA4(c4)
         c5 = self.SA5(c5)
 
-        a2 = self.smooth2(self.latlayer2(c2))
-        a3 = self.smooth3(self.latlayer3(c3))
-        a4 = self.smooth4(self.latlayer4(c4))
-        a5 = self.smooth5(self.latlayer5(c5))
+        a2 = self.latlayer2(c2)
+        a3 = self.latlayer3(c3)
+        a4 = self.latlayer4(c4)
+        a5 = self.latlayer5(c5)
 
-        s = self.smooth1(torch.cat((a2, a3, a4, a5), dim=1))  # 512
+        s = self.smooth(torch.cat((a2, a3, a4, a5), dim=1))  # 512
 
         x32 = self.bn6(self.fc6(s))
         x33_preflatten = self.relu6(x32)
@@ -306,3 +263,7 @@ class VisModel(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+
+
+
+
