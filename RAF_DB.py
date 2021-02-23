@@ -11,10 +11,6 @@ from utilz import multi_input, data_flip, data_rotate, visual_aggregation
 
 
 class RAF_DB(data.Dataset):
-    '''
-    If use the provided landmarks from the dataset, please re-define the graph structure in graphs.py.
-    Then, use this offline extraction to speed up the training and inference. 
-    '''
     def __init__(self, root='',
                  train=True, out_size=224, window_size=49, cnn_only=False):
         self.image_dir = []
