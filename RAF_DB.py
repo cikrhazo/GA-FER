@@ -52,6 +52,8 @@ class RAF_DB(data.Dataset):
         img = cv2.resize(img, dsize=(self.out_size, self.out_size), interpolation=cv2.INTER_LINEAR)
         mode = random.randint(0, 1)
         degree = random.uniform(-10, 10)
+        sigma = random.uniform(0, 8)
+        img = img + np.random.randn(*img.shape) * sigma
         if self.train:
             img = data_flip(img, mode=mode)  # 224*224*3
             img = data_rotate(img, degree, size_out=(224, 224))
