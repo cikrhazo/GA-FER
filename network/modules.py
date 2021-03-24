@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from network.blocks import Spatial_Basic_Block, Spatial_Bottleneck_Block
 import logging
-from network.Cattention import Comp_Att
+from network.Attentions import Comp_Att
 from datasets.graphs import Graph
 
 
