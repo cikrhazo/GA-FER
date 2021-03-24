@@ -102,7 +102,7 @@ class ResGCN(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 256 * point),
         )
-
+        # Can be replaced by a transformer. See our new work for detail
         # self.GeoRes = nn.Sequential(
         #     nn.Linear(32 * 3 * point, 512),
         #     nn.BatchNorm1d(512),
