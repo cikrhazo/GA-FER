@@ -1,5 +1,6 @@
 from network.net_gcn import ResGCN
-from network.net_cnn_single import VisModel
+# from network.net_cnn_single import VisModel
+from network.net_cnn_multi import VisModel
 import torch
 from torch import nn
 import torch.nn.functional as F
