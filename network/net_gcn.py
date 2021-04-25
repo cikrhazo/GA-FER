@@ -87,6 +87,7 @@ class ResGCN(nn.Module):
             for _ in range(point)
         )
         # self.abstract = nn.Conv2d(mem_size, 32, kernel_size=6, padding=0, stride=1)
+        # Could be replaced by a transformer.
         self.VisionRes = nn.Sequential(
             nn.Linear(32 * point, 512),
             nn.BatchNorm1d(512),
@@ -102,7 +103,7 @@ class ResGCN(nn.Module):
             nn.ReLU(),
             nn.Linear(512, 256 * point),
         )
-        # Can be replaced by a transformer. See our new work for detail
+        # Could be replaced by a transformer.
         # self.GeoRes = nn.Sequential(
         #     nn.Linear(32 * 3 * point, 512),
         #     nn.BatchNorm1d(512),
