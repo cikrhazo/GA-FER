@@ -95,13 +95,7 @@ class ResGCN(nn.Module):
             nn.Linear(512, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Linear(1024, 1024),
-            nn.BatchNorm1d(1024),
-            nn.ReLU(),
-            nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Linear(512, 256 * point),
+            nn.Linear(1024, 256 * point),
         )
         # Could be replaced by a transformer.
         # self.GeoRes = nn.Sequential(
@@ -111,13 +105,7 @@ class ResGCN(nn.Module):
         #     nn.Linear(512, 1024),
         #     nn.BatchNorm1d(1024),
         #     nn.ReLU(),
-        #     nn.Linear(1024, 1024),
-        #     nn.BatchNorm1d(1024),
-        #     nn.ReLU(),
-        #     nn.Linear(1024, 512),
-        #     nn.BatchNorm1d(512),
-        #     nn.ReLU(),
-        #     nn.Linear(512, 256 * point),
+        #     nn.Linear(1024, 256 * point),
         # )
 
         rgb_mean = (0.4488, 0.4371, 0.4040)
