@@ -93,6 +93,62 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+        
+        
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
+def mixup_data(x, y, alpha=0.2, use_cuda=True):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+
+def mixup_graph(x1, x2, y, alpha=0.2, use_cuda=True):
+    '''
+    Returns mixed inputs, pairs of targets, and lambda
+    x1: b, 3, c, t, n
+    x2 b, n, c, h, w, t
+    '''
+    if alpha > 0:
+        lam = random.uniform(0.2, 0.8)
+    else:
+        lam = 0
+    batch_size = x1.size()[0]
+    tokens = x1.size()[4]
+
+    mixed_x1 = copy.deepcopy(x1)
+    mixed_x2 = copy.deepcopy(x2)
+
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    wt = random.uniform(tokens * math.sqrt(lam) / 2, tokens - tokens * math.sqrt(lam) / 2)
+    w1, w2 = wt - tokens * math.sqrt(lam) / 2, wt + tokens * math.sqrt(lam) / 2
+    w1 = int(np.clip(w1, a_min=0, a_max=tokens))
+    w2 = int(np.clip(w2, a_min=0, a_max=tokens))
+
+    mixed_x1[:, :, :, :, w1: w2] = x1[index, :, :, :, w1: w2]
+    mixed_x2[:, w1: w2, :, :, :] = x2[index, w1: w2, :, :, :]
+    y_a, y_b = y, y[index]
+
+    lam = 1 - ((w2 - w1) / tokens)
+    return mixed_x1, mixed_x2, y_a, y_b, lam
 
 
 if __name__ == "__main__":
